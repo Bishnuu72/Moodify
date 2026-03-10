@@ -1,27 +1,29 @@
 import'package:flutter/material.dart';
-import'package:provider/provider.dart';
-import'../../services/auth_service.dart';
-import'../auth/login_screen.dart';
-import'therapist_home_screen.dart';
-import'therapist_patients_screen.dart';
-import'therapist_sessions_screen.dart';
-import'therapist_profile_screen.dart';
+import'../../constants/colors.dart';
+import'../home/home_screen.dart';
+import'../mood_wall/mood_wall_screen.dart';
+import'../new_mood/new_mood_screen.dart';
+import'../profile/profile_screen.dart';
+import'../wellness/wellness_screen.dart';
+import'../music/music_screen.dart';
 
-class TherapistDashboardScreen extends StatefulWidget {
-  const TherapistDashboardScreen({super.key});
+class UserDashboardScreen extends StatefulWidget {
+  const UserDashboardScreen({super.key});
 
   @override
-  State<TherapistDashboardScreen> createState() => _TherapistDashboardScreenState();
+  State<UserDashboardScreen> createState() => _UserDashboardScreenState();
 }
 
-class _TherapistDashboardScreenState extends State<TherapistDashboardScreen> {
+class _UserDashboardScreenState extends State<UserDashboardScreen> {
   int _currentIndex = 0;
   
   final List<Widget> _screens = [
-   const TherapistHomeScreen(),
-   const TherapistPatientsScreen(),
-   const TherapistSessionsScreen(),
-   const TherapistProfileScreen(),
+   const HomeScreen(),
+   const MoodWallScreen(),
+   const NewMoodScreen(),
+   const WellnessScreen(),
+   const MusicScreen(),
+   const ProfileScreen(),
   ];
 
   @override
@@ -48,8 +50,8 @@ class _TherapistDashboardScreenState extends State<TherapistDashboardScreen> {
                 _currentIndex = index;
               });
             },
-            selectedItemColor: Colors.teal,
-           unselectedItemColor: Colors.grey,
+            selectedItemColor: AppColors.primary,
+           unselectedItemColor: AppColors.textSecondary,
             backgroundColor: Colors.white,
             elevation: 0,
             showSelectedLabels: true,
@@ -69,14 +71,24 @@ class _TherapistDashboardScreenState extends State<TherapistDashboardScreen> {
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.people_outline),
-                activeIcon: Icon(Icons.people),
-                label: 'Patients',
+                icon: Icon(Icons.grid_view_outlined),
+                activeIcon: Icon(Icons.grid_view),
+                label: 'Mood Wall',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_today_outlined),
-                activeIcon: Icon(Icons.calendar_today),
-                label: 'Sessions',
+                icon: Icon(Icons.add_circle_outline),
+                activeIcon: Icon(Icons.add_circle),
+                label: 'New Mood',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.self_improvement_outlined),
+                activeIcon: Icon(Icons.self_improvement),
+                label: 'Wellness',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.music_note_outlined),
+                activeIcon: Icon(Icons.music_note),
+                label: 'Music',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person_outline),

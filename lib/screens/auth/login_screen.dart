@@ -9,6 +9,9 @@ import '../../utils/validators.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../main_navigation.dart';
+import '../admin/admin_dashboard_screen.dart';
+import '../therapist/therapist_dashboard_screen.dart';
+import '../user_dashboard/user_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,12 +38,30 @@ class _LoginScreenState extends State<LoginScreen> {
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
-        // Navigate to Main Navigation
+
+        // Get user role and navigate accordingly
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-          );
+          final user = authService.currentUser;
+          if (user != null) {
+            final role = await authService.getUserRole(user.uid);
+
+            Widget destinationScreen;
+            switch (role) {
+              case 'admin':
+                destinationScreen = const AdminDashboardScreen();
+                break;
+              case 'therapist':
+                destinationScreen = const TherapistDashboardScreen();
+                break;
+              default:
+                destinationScreen = const UserDashboardScreen();
+            }
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => destinationScreen),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -129,7 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const ForgotPasswordScreen()),
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
                         );
                       },
                       child: const Text(
@@ -165,7 +187,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const RegisterScreen()),
+                              builder: (context) => const RegisterScreen(),
+                            ),
                           );
                         },
                         child: const Text(

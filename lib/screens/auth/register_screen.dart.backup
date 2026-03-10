@@ -9,7 +9,6 @@ import '../../utils/validators.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../therapist/therapist_dashboard_screen.dart';
-import '../user_dashboard/user_dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,13 +18,12 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController_emailController = TextEditingController();
+  final TextEditingController_passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
-  String _selectedRole = 'user'; // Default role
+  bool_isLoading = false;
+  String_selectedRole = 'user'; // Default role
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
@@ -34,7 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       try {
-        final authService = Provider.of<AuthService>(context, listen: false);
+       final authService = Provider.of<AuthService>(context, listen: false);
         await authService.signUpWithEmail(
           _emailController.text.trim(),
           _passwordController.text.trim(),
@@ -42,20 +40,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
 
         if (mounted) {
-          Widget destinationScreen;
+         Widget destinationScreen;
           switch (_selectedRole) {
             case 'admin':
-              destinationScreen = const AdminDashboardScreen();
+             destinationScreen = const AdminDashboardScreen();
               break;
             case 'therapist':
-              destinationScreen = const TherapistDashboardScreen();
+             destinationScreen = const TherapistDashboardScreen();
               break;
-            default:
-              destinationScreen = const UserDashboardScreen();
+           default:
+             destinationScreen = const DashboardScreen();
           }
-
+          
           Navigator.pushReplacement(
-            context,
+           context,
             MaterialPageRoute(builder: (context) => destinationScreen),
           );
         }
@@ -76,7 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildRoleTile(String label, String value, IconData icon) {
-    final isSelected = _selectedRole == value;
+   final isSelected = _selectedRole == value;
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -85,11 +83,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey.shade300,
+       decoration: BoxDecoration(
+         color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+         borderRadius: BorderRadius.circular(12),
+         border: Border.all(
+           color: isSelected ? AppColors.primary : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -97,16 +95,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppColors.primary : Colors.grey,
+             color: isSelected ? AppColors.primary : Colors.grey,
               size: 32,
             ),
-            const SizedBox(height: 8),
+           const SizedBox(height:8),
             Text(
               label,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? AppColors.primary : Colors.grey.shade700,
+               color: isSelected ? AppColors.primary : Colors.grey.shade700,
               ),
               textAlign: TextAlign.center,
             ),
@@ -125,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
       ),
-      body: Container(
+     body: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         width: double.infinity,
         height: double.infinity,
@@ -135,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
+               const SizedBox(height:20),
                 FadeInDown(
                   duration: const Duration(milliseconds: 500),
                   child: const Text(
@@ -143,82 +141,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                     color: AppColors.textPrimary,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+               const SizedBox(height: 10),
                 FadeInDown(
-                  delay: const Duration(milliseconds: 200),
+                 delay: const Duration(milliseconds: 200),
                   duration: const Duration(milliseconds: 500),
                   child: const Text(
                     'Start your wellness journey today',
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppColors.textSecondary,
+                     color: AppColors.textSecondary,
                     ),
                   ),
                 ),
-                const SizedBox(height: 40),
+               const SizedBox(height:40),
                 FadeInUp(
-                  delay: const Duration(milliseconds: 400),
+                 delay: const Duration(milliseconds: 400),
                   duration: const Duration(milliseconds: 500),
                   child: CustomInput(
-                    controller: _emailController,
+                   controller: _emailController,
                     hintText: 'Email',
                     prefixIcon: Icons.email_outlined,
                     validator: Validators.validateEmail,
                   ),
                 ),
-                const SizedBox(height: 20),
+               const SizedBox(height:20),
                 FadeInUp(
-                  delay: const Duration(milliseconds: 600),
+                 delay: const Duration(milliseconds: 600),
                   duration: const Duration(milliseconds: 500),
                   child: CustomInput(
-                    controller: _passwordController,
+                   controller: _passwordController,
                     hintText: 'Password',
                     prefixIcon: Icons.lock_outline,
                     isPassword: true,
                     validator: Validators.validatePassword,
                   ),
                 ),
-                const SizedBox(height: 20),
+               const SizedBox(height:20),
                 FadeInUp(
-                  delay: const Duration(milliseconds: 700),
+                 delay: const Duration(milliseconds: 700),
                   duration: const Duration(milliseconds: 500),
                   child: CustomInput(
-                    controller: _confirmPasswordController,
+                   controller: _confirmPasswordController,
                     hintText: 'Confirm Password',
                     prefixIcon: Icons.lock_outline,
                     isPassword: true,
                     validator: (value) => Validators.validateConfirmPassword(
-                      value,
-                      _passwordController.text,
-                    ),
+                        value, _passwordController.text),
                   ),
                 ),
-                const SizedBox(height: 30),
+               const SizedBox(height:30),
                 FadeInUp(
-                  delay: const Duration(milliseconds: 750),
+                 delay: const Duration(milliseconds: 750),
                   duration: const Duration(milliseconds: 500),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                     const Text(
                         'Select Account Type',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                         color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                     const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
-                            child: _buildRoleTile('User', 'user', Icons.person),
+                            child: _buildRoleTile(
+                              'User',
+                              'user',
+                              Icons.person,
+                            ),
                           ),
-                          const SizedBox(width: 12),
+                         const SizedBox(width: 12),
                           Expanded(
                             child: _buildRoleTile(
                               'Therapist',
@@ -226,7 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               Icons.medical_services,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                         const SizedBox(width: 12),
                           Expanded(
                             child: _buildRoleTile(
                               'Admin',
@@ -239,9 +239,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 30),
+               const SizedBox(height:30),
                 FadeInUp(
-                  delay: const Duration(milliseconds: 800),
+                 delay: const Duration(milliseconds: 800),
                   duration: const Duration(milliseconds: 500),
                   child: CustomButton(
                     text: 'Sign Up',
