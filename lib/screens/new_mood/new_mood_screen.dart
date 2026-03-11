@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../constants/colors.dart';
-import '../../models/mood_entry.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 
 class NewMoodScreen extends StatefulWidget {
   const NewMoodScreen({super.key});
@@ -18,6 +20,8 @@ class _NewMoodScreenState extends State<NewMoodScreen> {
   String selectedEmoji = '';
   int intensity = 5;
   List<String> tags = [];
+  bool _isSubmitting = false;
+  bool _isAnonymous = false;
   
   final List<Map<String, String>> moodOptions = [
     {'mood': 'Happy', 'emoji': '😊'},
@@ -349,6 +353,76 @@ class _NewMoodScreenState extends State<NewMoodScreen> {
               ),
             const SizedBox(height: 30),
 
+            // Anonymous Toggle
+            if (selectedMood.isNotEmpty)
+              FadeInUp(
+                delay: const Duration(milliseconds: 900),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isAnonymous = !_isAnonymous;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Post Anonymously',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _isAnonymous 
+                                    ? 'Your name will not be shown'
+                                    : 'Your name will be displayed',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Transform.scale(
+                          scale: 1.2,
+                          child: Switch(
+                            value: _isAnonymous,
+                            onChanged: (value) {
+                              setState(() {
+                                _isAnonymous = value;
+                              });
+                            },
+                            activeColor: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 30),
+
             // Submit Button
             if (selectedMood.isNotEmpty)
               FadeInUp(
@@ -357,7 +431,7 @@ class _NewMoodScreenState extends State<NewMoodScreen> {
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
-                    onPressed: _submitMoodEntry,
+                    onPressed: _isSubmitting ? null : _submitMoodEntry,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -366,13 +440,22 @@ class _NewMoodScreenState extends State<NewMoodScreen> {
                       ),
                       elevation: 5,
                     ),
-                    child: const Text(
-                      'Save Mood Entry',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Save Mood Entry',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -382,32 +465,72 @@ class _NewMoodScreenState extends State<NewMoodScreen> {
     );
   }
 
-  void _submitMoodEntry() {
+  void _submitMoodEntry() async {
     if (selectedMood.isEmpty) return;
 
-    // Create mood entry (this would normally be saved to backend)
-    final moodEntry = MoodEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: 'current_user_id', // This would come from auth service
-      mood: selectedMood,
-      emoji: selectedEmoji,
-      intensity: intensity,
-      journalEntry: _journalController.text.trim().isNotEmpty 
-          ? _journalController.text.trim() 
-          : null,
-      tags: tags,
-      createdAt: DateTime.now(),
-    );
+    // Get current user
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser;
 
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Mood entry saved successfully!'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login to save mood entries'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
-    // Navigate back
-    Navigator.pop(context);
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      print('🔵 Submitting mood entry with isAnonymous: $_isAnonymous');
+      
+      // Save to MongoDB via API
+      final result = await ApiService.createMood(
+        userId: user.uid,
+        mood: selectedMood,
+        emotionScore: intensity,
+        note: _journalController.text.trim().isNotEmpty 
+            ? _journalController.text.trim() 
+            : null,
+        tags: tags.isNotEmpty ? tags : null,
+        isAnonymous: _isAnonymous,
+      );
+
+      print('📊 API Response: $result');
+
+      if (result['success'] == true) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Mood entry saved successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+
+        // Navigate back
+        Navigator.pop(context);
+      } else {
+        throw Exception('Failed to save mood');
+      }
+    } catch (e) {
+      print('Error saving mood: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Failed to save: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 }

@@ -1,9 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../constants/colors.dart';
+import '../../services/api_service.dart';
 
-class TherapistScreen extends StatelessWidget {
+class TherapistScreen extends StatefulWidget {
   const TherapistScreen({super.key});
+
+  @override
+  State<TherapistScreen> createState() => _TherapistScreenState();
+}
+
+class _TherapistScreenState extends State<TherapistScreen> {
+  bool _isLoading = true;
+  List<dynamic> _therapists = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTherapists();
+  }
+
+  Future<void> _loadTherapists() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Fetch all users with role 'therapist' from MongoDB
+      final response = await ApiService.getUsersByRole('therapist');
+      
+      if (response['success'] == true) {
+        setState(() {
+          _therapists = response['data'];
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load therapists');
+      }
+    } catch (e) {
+      print('Error loading therapists: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load therapists: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,304 +68,156 @@ class TherapistScreen extends StatelessWidget {
         foregroundColor: AppColors.textPrimary,
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Show filter options
-            },
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadTherapists,
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Search Bar
-            FadeInDown(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search therapists...',
-                    prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(16),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 25),
-
-            // Featured Therapists
-            FadeInUp(
-              delay: const Duration(milliseconds: 200),
-              child: const Text(
-                'Featured Therapists',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            FadeInUp(
-              delay: const Duration(milliseconds: 400),
-              child: SizedBox(
-                height: 220,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadTherapists,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildFeaturedTherapist(
-                      'Dr. Sarah Wilson',
-                      'Clinical Psychologist',
-                      'Anxiety, Depression, PTSD',
-                      4.9,
-                      127,
-                      'https://placehold.co/150x150/6A5AE0/white?text=Dr.+Sarah',
-                      context,
+                    // Search Bar
+                    FadeInDown(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search therapists...',
+                            prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 16),
-                    _buildFeaturedTherapist(
-                      'Dr. Michael Chen',
-                      'Licensed Therapist',
-                      'Relationships, Stress, Career',
-                      4.8,
-                      89,
-                      'https://placehold.co/150x150/9087E5/white?text=Dr.+Michael',
-                      context,
+                    const SizedBox(height: 25),
+
+                    // Stats
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 200),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(
+                              _therapists.length.toString(),
+                              'Therapists',
+                              Icons.people,
+                            ),
+                            _buildStatItem(
+                              '4.8',
+                              'Avg Rating',
+                              Icons.star,
+                            ),
+                            _buildStatItem(
+                              '100%',
+                              'Verified',
+                              Icons.verified,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 16),
-                    _buildFeaturedTherapist(
-                      'Dr. Emma Rodriguez',
-                      'Counseling Psychologist',
-                      'Trauma, Grief, Life Transitions',
-                      4.9,
-                      156,
-                      'https://placehold.co/150x150/10B981/white?text=Dr.+Emma',
-                      context,
+                    const SizedBox(height: 25),
+
+                    // Therapists List
+                    Expanded(
+                      child: _therapists.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No therapists available yet.',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _therapists.length,
+                              itemBuilder: (context, index) {
+                                final therapist = _therapists[index];
+                                return FadeInUp(
+                                  delay: Duration(milliseconds: 100 * index),
+                                  child: _buildTherapistCard(therapist),
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 30),
-
-            // All Therapists
-            const Text(
-              'All Therapists',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildTherapistCard(
-                    'Dr. James Parker',
-                    'Marriage & Family Therapist',
-                    'Couples therapy, Family counseling, Communication',
-                    4.7,
-                    92,
-                    85,
-                    'Anxiety',
-                    'https://placehold.co/80x80/6A5AE0/white?text=Dr.+James',
-                    context,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTherapistCard(
-                    'Dr. Lisa Thompson',
-                    'Cognitive Behavioral Therapist',
-                    'CBT, Mindfulness, Depression treatment',
-                    4.8,
-                    143,
-                    90,
-                    'Depression',
-                    'https://placehold.co/80x80/10B981/white?text=Dr.+Lisa',
-                    context,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTherapistCard(
-                    'Dr. Robert Kim',
-                    'Trauma Specialist',
-                    'PTSD, Trauma recovery, EMDR therapy',
-                    4.9,
-                    76,
-                    95,
-                    'PTSD',
-                    'https://placehold.co/80x80/F59E0B/white?text=Dr.+Robert',
-                    context,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildFeaturedTherapist(
-    String name,
-    String specialty,
-    String focusAreas,
-    double rating,
-    int sessions,
-    String imageUrl,
-    BuildContext context,
-  ) {
-    return Container(
-      width: 280,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+  Widget _buildStatItem(String value, String label, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Image
-            Container(
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Name and Specialty
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              specialty,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Rating and Sessions
-            Row(
-              children: [
-                const Icon(Icons.star, color: Colors.amber, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  rating.toString(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.people, color: AppColors.textSecondary, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  '$sessions sessions',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Focus Areas
-            Text(
-              focusAreas,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-
-            // Book Button
-            SizedBox(
-              width: double.infinity,
-              height: 35,
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Navigate to booking
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Booking feature coming soon!'),
-                      backgroundColor: AppColors.primary,
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Book Session',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          child: Icon(icon, color: AppColors.primary, size: 24),
         ),
-      ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildTherapistCard(
-    String name,
-    String specialty,
-    String description,
-    double rating,
-    int sessions,
-    int successRate,
-    String expertise,
-    String imageUrl,
-    BuildContext context,
-  ) {
+  Widget _buildTherapistCard(dynamic therapist) {
+    // Get data from MongoDB response
+    final name = therapist['displayName'] ?? 'Therapist';
+    final specialization = therapist['specialization'] ?? 'General Therapy';
+    final email = therapist['email'] ?? '';
+    final photoUrl = therapist['photoUrl'];
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -335,22 +233,22 @@ class TherapistScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Profile Image
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
+                  ? Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'T',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 16),
-            
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,124 +263,54 @@ class TherapistScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    specialty,
+                    specialization,
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
-                  // Stats
                   Row(
                     children: [
-                      _buildStatBadge(
-                        '${rating.toStringAsFixed(1)}★',
-                        Colors.amber,
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                      const SizedBox(width: 4),
+                      const Text(
+                        '4.9',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      _buildStatBadge(
-                        '$sessions sessions',
-                        AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildStatBadge(
-                        '${successRate}% success',
-                        AppColors.success,
+                      const SizedBox(width: 16),
+                      const Icon(Icons.check_circle, color: AppColors.success, size: 16),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Verified',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.success,
+                        ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            
-            // Book Button
-            Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    expertise,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+            ElevatedButton(
+              onPressed: () {
+                // TODO: Navigate to therapist profile or book session
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: Navigate to booking
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Booking feature coming soon!'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const Text(
-                    'Book',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+              ),
+              child: const Text('Contact'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );

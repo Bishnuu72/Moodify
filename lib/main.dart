@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'constants/colors.dart';
 import 'services/auth_service.dart';
 import 'services/navigation_service.dart';
+import 'providers/user_profile_provider.dart';
 import 'screens/auth/login_screen.dart';
 
 void main() async {
@@ -25,6 +26,12 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProxyProvider<AuthService, UserProfileProvider>(
+          create: (context) => UserProfileProvider(
+            Provider.of<AuthService>(context, listen: false),
+          ),
+          update: (context, authService, previous) => previous ?? UserProfileProvider(authService),
+        ),
       ],
       child: MaterialApp(
         title: 'Moodify',

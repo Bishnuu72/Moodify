@@ -1,10 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'api_service.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   User? get currentUser => _auth.currentUser;
 
@@ -15,43 +14,47 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> signUpWithEmail(String email, String password, String role) async {
+  Future<void> signUpWithEmail(String email, String password, String role, {String? fullName}) async {
     try {
-      // Create user with Firebase Auth
+      print('🔵 Starting registration for: $email with role: $role');
+      
+      // Create user with Firebase Auth only (for authentication)
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Store user profile with role in Firestore
-      await _firestore.collection('users').doc(userCredential.user!.uid).set({
-        'userId': userCredential.user!.uid,
-        'email': email,
-        'role': role,
-        'displayName': '',
-        'photoUrl': null,
-        'bio': null,
-        'createdAt': FieldValue.serverTimestamp(),
-        'moodEntriesCount': 0,
-        'preferredMood': '',
-        'interests': [],
-      });
+      print('✅ Firebase Auth created user: ${userCredential.user!.uid}');
+
+      // Store user profile in MongoDB via API
+      print('💾 Saving user to MongoDB...');
+      final result = await ApiService.createUser(
+        userId: userCredential.user!.uid,
+        email: email,
+        role: role,
+        displayName: fullName ?? '',
+      );
+
+      print('✅ MongoDB save result: ${result['success']}');
+      print('✅ User saved to MongoDB with ID: ${result['data']['userId']}');
 
       notifyListeners();
     } catch (e) {
+      print('❌ Registration error: $e');
       rethrow;
     }
   }
 
   Future<String?> getUserRole(String uid) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
-      if (doc.exists) {
-        return (doc.data() as Map<String, dynamic>)['role'] ?? 'user';
+      // Get user from MongoDB
+      final response = await ApiService.getUserProfile(uid);
+      if (response['success'] == true && response['data'] != null) {
+        return response['data']['role'] ?? 'user';
       }
       return 'user';
     } catch (e) {
-      print('Error getting user role: $e');
+      print('Error getting user role from MongoDB: $e');
       return 'user';
     }
   }

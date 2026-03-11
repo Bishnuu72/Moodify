@@ -20,7 +20,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   final List<Widget> _screens = [
    const HomeScreen(),
    const MoodWallScreen(),
-   const NewMoodScreen(),
+   // const NewMoodScreen(),
    const WellnessScreen(),
    const MusicScreen(),
    const ProfileScreen(),
@@ -75,11 +75,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                 activeIcon: Icon(Icons.grid_view),
                 label: 'Mood Wall',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.add_circle_outline),
-                activeIcon: Icon(Icons.add_circle),
-                label: 'New Mood',
-              ),
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.add_circle_outline),
+              //   activeIcon: Icon(Icons.add_circle),
+              //   label: 'New Mood',
+              // ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.self_improvement_outlined),
                 activeIcon: Icon(Icons.self_improvement),

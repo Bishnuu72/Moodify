@@ -3,21 +3,80 @@ import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../constants/colors.dart';
 import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
+import '../../providers/user_profile_provider.dart';
 import '../mood_wall/mood_wall_screen.dart';
 import '../new_mood/new_mood_screen.dart';
 import '../wellness/wellness_screen.dart';
-import '../emotion/emotion_detection_screen.dart';
-import '../admin/admin_dashboard_screen.dart';
-import '../therapist/therapist_screen.dart';
+import'../emotion/emotion_detection_screen.dart';
+import'../therapist/therapist_screen.dart';
+import '../profile/profile_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = Provider.of<AuthService>(context).currentUser;
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-    return Scaffold(
+class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? _userStats;
+  bool _isLoadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load user profile
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final profileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+      profileProvider.loadUserProfile();
+      // Load user stats
+      _loadUserStats();
+    });
+  }
+
+  Future<void> _loadUserStats() async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final user = authService.currentUser;
+
+      if (user != null) {
+        final stats = await ApiService.getMoodStats(user.uid);
+        if (stats['success'] == true) {
+          setState(() {
+            _userStats = stats['data'];
+            _isLoadingStats = false;
+          });
+        } else {
+          throw Exception('Failed to load stats');
+        }
+      } else {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading user stats: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<UserProfileProvider>(
+      builder: (context, profileProvider, child) {
+        // Use display name from MongoDB, fallback to email prefix
+        final displayName = profileProvider.displayName;
+
+        return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
@@ -44,15 +103,73 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Section
+            // Profile Icon and Welcome Section
             FadeInDown(
-              child: Text(
-                'Hello, ${user?.email?.split('@')[0] ?? 'Friend'} 👋',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              child: Row(
+                children: [
+                  // Profile Icon
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      );
+                    },
+                    child: Consumer<UserProfileProvider>(
+                      builder: (context, profileProvider, child) {
+                        final photoUrl = profileProvider.photoUrl;
+                        final displayName = profileProvider.displayName;
+                        
+                        return Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                          ),
+                          child: photoUrl != null && photoUrl.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(
+                                    photoUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildAvatarInitials(displayName);
+                                    },
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                              : null,
+                                          strokeWidth: 2,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              : _buildAvatarInitials(displayName),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Welcome Text
+                  Expanded(
+                    child: Text(
+                      'Hello, $displayName 👋',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),
@@ -128,14 +245,33 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildStatCard('7', 'Entries', Icons.edit_note),
-                        _buildStatCard('4.2', 'Avg Mood', Icons.mood),
-                        _buildStatCard('3', 'Streak', Icons.local_fire_department),
-                      ],
-                    ),
+                    _isLoadingStats
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStatCard(
+                                _userStats?['weeklyEntries']?.toString() ?? '0',
+                                'Entries',
+                                Icons.edit_note,
+                              ),
+                              _buildStatCard(
+                                _userStats?['avgEmotionScore']?.toString() ?? '0',
+                                'Avg Mood',
+                                Icons.mood,
+                              ),
+                              _buildStatCard(
+                                _userStats?['currentStreak']?.toString() ?? '0',
+                                'Streak',
+                                Icons.local_fire_department,
+                              ),
+                            ],
+                          ),
                   ],
                 ),
               ),
@@ -218,7 +354,7 @@ class HomeScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height:12),
                   _buildActionCard(
                     'Find Therapist',
                     'Connect with professional help',
@@ -226,24 +362,9 @@ class HomeScreen extends StatelessWidget {
                     Colors.red,
                     () {
                       Navigator.push(
-                        context,
+                       context,
                         MaterialPageRoute(
                           builder: (context) => const TherapistScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildActionCard(
-                    'Admin Panel',
-                    'System administration tools',
-                    Icons.admin_panel_settings,
-                    Colors.grey,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminDashboardScreen(),
                         ),
                       );
                     },
@@ -254,6 +375,8 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 
@@ -330,6 +453,23 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAvatarInitials(String displayName) {
+    final initials = displayName.isNotEmpty 
+        ? displayName.split(' ').map((name) => name.isNotEmpty ? name[0] : '').take(2).join().toUpperCase()
+        : 'U';
+    
+    return Center(
+      child: Text(
+        initials,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
+        ),
+      ),
     );
   }
 
