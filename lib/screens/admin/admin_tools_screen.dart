@@ -1,6 +1,7 @@
 import'package:flutter/material.dart';
 import'../../constants/colors.dart';
 import'package:animate_do/animate_do.dart';
+import'admin_wellness_screen.dart';
 
 class AdminToolsScreen extends StatelessWidget {
   const AdminToolsScreen({super.key});
@@ -36,7 +37,7 @@ class AdminToolsScreen extends StatelessWidget {
               FadeInDown(
                 delay: const Duration(milliseconds: 100),
                 child: Text(
-                  'Manage system settings and configurations',
+                  'Manage wellness tools, games, and system settings',
                   style: TextStyle(
                     fontSize: 16,
                   color: AppColors.textSecondary,
@@ -50,46 +51,61 @@ class AdminToolsScreen extends StatelessWidget {
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount:2,
+                crossAxisCount: 2,
                 mainAxisSpacing: 15,
                 crossAxisSpacing: 15,
                 childAspectRatio: 1.1,
                 children: [
                   _buildToolCard(
+                    'Wellness Tools',
+                    Icons.self_improvement_outlined,
+                    Colors.teal,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AdminWellnessScreen()),
+                      );
+                    },
+                  ),
+                  _buildToolCard(
+                    'Mind Games',
+                    Icons.games_outlined,
+                    Colors.purple,
+                    () {
+                      // Navigate to mind games management
+                    },
+                  ),
+                  _buildToolCard(
+                    'Music Therapy',
+                    Icons.music_note_outlined,
+                    Colors.blue,
+                    () {
+                      // Navigate to music therapy management
+                    },
+                  ),
+                  _buildToolCard(
                     'Analytics',
                     Icons.analytics_outlined,
-                    Colors.blue,
-                    () {},
+                    Colors.orange,
+                    () {
+                      // Navigate to analytics
+                    },
                   ),
                   _buildToolCard(
                     'Notifications',
                     Icons.notifications_outlined,
-                    Colors.orange,
-                    () {},
-                  ),
-                  _buildToolCard(
-                    'Content Moderation',
-                    Icons.flag_outlined,
                     Colors.red,
-                    () {},
+                    () {
+                      // Navigate to notifications
+                    },
                   ),
                   _buildToolCard(
                     'Backup & Restore',
-                    Icons.backup,
+                    Icons.backup_table_outlined,
                     Colors.green,
-                    () {},
-                  ),
-                  _buildToolCard(
-                    'API Keys',
-                    Icons.vpn_key,
-                    Colors.purple,
-                    () {},
-                  ),
-                  _buildToolCard(
-                    'Logs',
-                    Icons.bug_report,
-                    Colors.grey,
-                    () {},
+                    () {
+                      // Navigate to backup & restore
+                    },
                   ),
                 ],
               ),

@@ -2,9 +2,8 @@ import'package:flutter/material.dart';
 import'../../constants/colors.dart';
 import'../home/home_screen.dart';
 import'../mood_wall/mood_wall_screen.dart';
-import'../new_mood/new_mood_screen.dart';
 import'../profile/profile_screen.dart';
-import'../wellness/wellness_screen.dart';
+import'../user/user_wellness_screen.dart';
 import'../music/music_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
@@ -20,8 +19,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   final List<Widget> _screens = [
    const HomeScreen(),
    const MoodWallScreen(),
-   // const NewMoodScreen(),
-   const WellnessScreen(),
+   const UserWellnessScreen(),
    const MusicScreen(),
    const ProfileScreen(),
   ];
@@ -75,11 +73,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                 activeIcon: Icon(Icons.grid_view),
                 label: 'Mood Wall',
               ),
-              // BottomNavigationBarItem(
-              //   icon: Icon(Icons.add_circle_outline),
-              //   activeIcon: Icon(Icons.add_circle),
-              //   label: 'New Mood',
-              // ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.self_improvement_outlined),
                 activeIcon: Icon(Icons.self_improvement),

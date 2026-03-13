@@ -239,21 +239,27 @@ class TherapistSessionsScreen extends StatelessWidget {
           children: [
           const Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
          const SizedBox(width: 4),
-           Text(
-             session['time'],
-          style: const TextStyle(
-               fontSize: 14,
-            color: AppColors.textSecondary,
+           Expanded(
+             child: Text(
+               session['time'],
+               style: const TextStyle(
+                 fontSize: 14,
+                 color: AppColors.textSecondary,
+               ),
+               overflow: TextOverflow.ellipsis,
              ),
            ),
          const SizedBox(width: 16),
           const Icon(Icons.event_note, size: 14, color: AppColors.textSecondary),
          const SizedBox(width: 4),
-           Text(
-             session['type'],
-          style: const TextStyle(
-               fontSize: 14,
-            color: AppColors.textSecondary,
+           Expanded(
+             child: Text(
+               session['type'],
+               style: const TextStyle(
+                 fontSize: 14,
+                 color: AppColors.textSecondary,
+               ),
+               overflow: TextOverflow.ellipsis,
              ),
            ),
           ],

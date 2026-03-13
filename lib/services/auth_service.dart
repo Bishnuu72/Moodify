@@ -1,44 +1,73 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
+// Simple user session model
+class UserSession {
+  final String uid;
+  final Map<String, dynamic> data;
+  
+  UserSession(this.uid, this.data);
+  
+  String get email => data['email'] ?? '';
+  String? get displayName => data['displayName'];
+  String get role => data['role'] ?? 'user';
+}
+
 class AuthService extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Simple session management
+  String? _currentUserId;
+  Map<String, dynamic>? _currentUserData;
 
-  User? get currentUser => _auth.currentUser;
-
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  UserSession? get currentUser => 
+      _currentUserId != null && _currentUserData != null 
+          ? UserSession(_currentUserId!, _currentUserData!) 
+          : null;
 
   Future<void> signInWithEmail(String email, String password) async {
-    await _auth.signInWithEmailAndPassword(email: email, password: password);
-    notifyListeners();
+    try {
+      print('🔵 Starting login for: $email');
+      
+      // Call backend API to authenticate user
+      final response = await ApiService.login(email, password);
+      
+      if (response['success'] == true) {
+        _currentUserId = response['data']['userId'];
+        _currentUserData = response['data'];
+        print('✅ Login successful for user: ${_currentUserId}');
+        notifyListeners();
+      } else {
+        throw Exception(response['message'] ?? 'Login failed');
+      }
+    } catch (e) {
+      print('❌ Login error: $e');
+      rethrow;
+    }
   }
 
   Future<void> signUpWithEmail(String email, String password, String role, {String? fullName}) async {
     try {
       print('🔵 Starting registration for: $email with role: $role');
       
-      // Create user with Firebase Auth only (for authentication)
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      // Register user directly in MongoDB
+      print('💾 Registering user in MongoDB...');
+      final result = await ApiService.register(
         email: email,
         password: password,
-      );
-
-      print('✅ Firebase Auth created user: ${userCredential.user!.uid}');
-
-      // Store user profile in MongoDB via API
-      print('💾 Saving user to MongoDB...');
-      final result = await ApiService.createUser(
-        userId: userCredential.user!.uid,
-        email: email,
         role: role,
         displayName: fullName ?? '',
       );
 
-      print('✅ MongoDB save result: ${result['success']}');
-      print('✅ User saved to MongoDB with ID: ${result['data']['userId']}');
-
-      notifyListeners();
+      if (result['success'] == true) {
+        print('✅ MongoDB registration successful');
+        print('✅ User created with ID: ${result['data']['userId']}');
+        
+        // Auto-login after registration
+        _currentUserId = result['data']['userId'];
+        _currentUserData = result['data'];
+        notifyListeners();
+      } else {
+        throw Exception(result['message'] ?? 'Registration failed');
+      }
     } catch (e) {
       print('❌ Registration error: $e');
       rethrow;
@@ -60,11 +89,15 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _auth.signOut();
+    _currentUserId = null;
+    _currentUserData = null;
+    print('👋 User logged out');
     notifyListeners();
   }
 
   Future<void> sendPasswordResetEmail(String email) async {
-    await _auth.sendPasswordResetEmail(email: email);
+    // For now, just show a message - implement later with backend
+    print('Password reset requested for: $email');
+    throw UnimplementedError('Password reset not implemented yet');
   }
 }

@@ -32,10 +32,14 @@ app.use('/api', limiter);
 // Routes
 const moodRoutes = require('./routes/moodRoutes');
 const userRoutes = require('./routes/userRoutes');
+const wellnessRoutes = require('./routes/wellnessRoutes');
+const verificationRoutes = require('./routes/verificationRoutes');
 
 // API Routes
 app.use('/api/moods', moodRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/wellness', wellnessRoutes);
+app.use('/api/verification', verificationRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

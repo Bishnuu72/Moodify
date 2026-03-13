@@ -1,22 +1,145 @@
 import'package:flutter/material.dart';
 import'package:animate_do/animate_do.dart';
 import'../../constants/colors.dart';
+import'../../services/auth_service.dart';
+import'../../services/api_service.dart';
 
-class TherapistHomeScreen extends StatelessWidget {
+class TherapistHomeScreen extends StatefulWidget {
   const TherapistHomeScreen({super.key});
+
+  @override
+  State<TherapistHomeScreen> createState() => _TherapistHomeScreenState();
+}
+
+class _TherapistHomeScreenState extends State<TherapistHomeScreen> {
+  String _therapistName = '';
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadTherapistName();
+  }
+  
+  Future<void> _loadTherapistName() async {
+    try {
+      final authService = AuthService();
+      final currentUser = authService.currentUser;
+      
+      print('🔍 [DEBUG] Current user UID: ${currentUser?.uid ?? "NULL"}');
+      
+      if (currentUser != null) {
+        print('📊 Fetching therapist name for user: ${currentUser.uid}');
+        final response = await ApiService.getUserProfile(currentUser.uid);
+        
+        print('📡 API Response Success: ${response['success']}');
+        print('📡 API Response Data: ${response['data']}');
+        
+        if (response['success'] && response['data'] != null) {
+          final userData = response['data'];
+          
+          // Get displayName from MongoDB - it should have the full name
+          String therapistDisplayName = '';
+          
+          // Try to get displayName field first
+          if (userData.containsKey('displayName')) {
+            therapistDisplayName = userData['displayName'].toString();
+            print('✅ Got displayName from DB: "$therapistDisplayName"');
+          }
+          
+          // If displayName is empty, fall back to email
+          if (therapistDisplayName.isEmpty || therapistDisplayName.trim().isEmpty) {
+            final email = userData['email'] ?? '';
+            if (email.isNotEmpty) {
+              // Use the part before @ as name
+              therapistDisplayName = email.split('@').first;
+              print('⚠️ displayName was empty, using email prefix: "$therapistDisplayName"');
+            } else {
+              therapistDisplayName = 'Therapist';
+              print('❌ No displayName or email, using fallback: "Therapist"');
+            }
+          }
+          
+          // Now extract just the first name or "Title + First Name"
+          setState(() {
+            final nameParts = therapistDisplayName.split(' ');
+            print('📝 Name parts after split: $nameParts');
+            
+            // Check if first part is a title (Dr., Prof., etc.)
+            if (nameParts.length >= 2 && 
+                (nameParts[0].toLowerCase().endsWith('.') || 
+                 nameParts[0].toLowerCase() == 'dr')) {
+              // Has title - use "Title Firstname"
+              _therapistName = '${nameParts[0]} ${nameParts[1]}';
+              print('✅ Using title + first name: "$_therapistName"');
+            } else if (nameParts.isNotEmpty) {
+              // No title - just use first name
+              _therapistName = nameParts.first;
+              print('✅ Using first name: "$_therapistName"');
+            } else {
+              _therapistName = therapistDisplayName;
+              print('⚠️ Using full display name: "$_therapistName"');
+            }
+            
+            _isLoading = false;
+            print('🎉 FINAL RESULT - Greeting will show: "${_getGreeting()}, $_therapistName"');
+          });
+        } else {
+          print('❌ API returned success: ${response['success']}');
+          print('❌ API Error Message: ${response['message'] ?? "Unknown error"}');
+          setState(() {
+            _therapistName = 'Therapist';
+            _isLoading = false;
+          });
+        }
+      } else {
+        print('❌ No current user found - therapist is not logged in');
+        setState(() {
+          _therapistName = 'Therapist';
+          _isLoading = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      print('❌ Critical error loading therapist name: $e');
+      print('❌ Stack trace: $stackTrace');
+      setState(() {
+        _therapistName = 'Therapist';
+        _isLoading = false;
+      });
+    }
+  }
+  
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
      backgroundColor: AppColors.background,
       appBar: AppBar(
-       title: const Text(
-          'Therapist Dashboard',
-        style: TextStyle(
-           fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
+       title: _isLoading
+           ? const Text(
+              'Therapist Dashboard',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+             )
+           : Text(
+              '$_therapistName\'s Dashboard',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+             ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
@@ -35,14 +158,20 @@ class TherapistHomeScreen extends StatelessWidget {
          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
            FadeInDown(
-             child: const Text(
-               'Good Morning, Dr. Sarah',
-               style: TextStyle(
-                 fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-                ),
-              ),
+             child: _isLoading
+                 ? Container(
+                     width: 200,
+                     height: 32,
+                     color: Colors.grey.shade300,
+                   )
+                 : Text(
+                   _getGreeting(),
+                   style: const TextStyle(
+                     fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                    ),
+                  ),
             ),
           const SizedBox(height: 8),
            FadeInDown(

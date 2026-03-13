@@ -80,6 +80,68 @@ class CloudinaryService {
     }
   }
   
+  /// Upload audio file to Cloudinary (for wellness music)
+  /// Returns the secure URL if successful
+  Future<String?> uploadAudioFile(File audioFile, {String? title}) async {
+    try {
+      // Validate credentials
+      if (cloudName == 'YOUR_CLOUD_NAME' || uploadPreset == 'YOUR_UPLOAD_PRESET') {
+        throw Exception('Cloudinary not configured!');
+      }
+      
+      print('🎵 Starting Cloudinary audio upload...');
+      
+      // Read file as bytes
+      final fileBytes = await audioFile.readAsBytes();
+      
+      print('📦 Audio file size: ${await audioFile.length()} bytes');
+      
+      // Create multipart request
+      final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/auto/upload');
+      final request = http.MultipartRequest('POST', url);
+      
+      // Add upload preset
+      request.fields['upload_preset'] = uploadPreset;
+      request.fields['folder'] = 'wellness_audio';
+      request.fields['resource_type'] = 'auto';
+      
+      // Add file
+      final fileName = '${title?.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_') ?? 'audio'}_${DateTime.now().millisecondsSinceEpoch}';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          fileBytes,
+          filename: '$fileName.mp3',
+        ),
+      );
+      
+      print('☁️ Uploading audio to Cloudinary...');
+      
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('📊 Response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final secureUrl = data['secure_url'] as String;
+        
+        print('✅ Audio upload successful!');
+        print('🔗 URL: $secureUrl');
+        print('🆔 Public ID: ${data['public_id']}');
+        
+        return secureUrl;
+      } else {
+        print('❌ Audio upload failed: ${response.body}');
+        throw Exception('Failed to upload audio to Cloudinary: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error uploading audio to Cloudinary: $e');
+      throw Exception('Cloudinary audio upload error: $e');
+    }
+  }
+  
   /// Compress image before upload
   Future<File?> _compressImage(File imageFile) async {
     try {

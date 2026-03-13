@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  password: {
+    type: String,
+    required: true,
+    minlength: 6,
+    select: false, // Don't return by default in queries
+  },
   bio: {
     type: String,
     default: null,
@@ -55,6 +61,33 @@ const userSchema = new mongoose.Schema({
   moodEntriesCount: {
     type: Number,
     default: 0,
+  },
+  // Suspension fields
+  isSuspended: {
+    type: Boolean,
+    default: false,
+  },
+  suspendedUntil: {
+    type: Date,
+    default: null,
+  },
+  suspensionReason: {
+    type: String,
+    default: null,
+  },
+  // Verification fields for therapist account
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: null,
+  },
+  verifiedAt: {
+    type: Date,
+    default: null,
   },
 }, {
   timestamps: true, // Automatically adds createdAt and updatedAt
