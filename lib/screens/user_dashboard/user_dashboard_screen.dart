@@ -2,9 +2,9 @@ import'package:flutter/material.dart';
 import'../../constants/colors.dart';
 import'../home/home_screen.dart';
 import'../mood_wall/mood_wall_screen.dart';
-import'../profile/profile_screen.dart';
 import'../user/user_wellness_screen.dart';
 import'../music/music_screen.dart';
+import'../therapist/therapist_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
@@ -21,7 +21,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
    const MoodWallScreen(),
    const UserWellnessScreen(),
    const MusicScreen(),
-   const ProfileScreen(),
+   const TherapistScreen(), // Changed from ProfileScreen to TherapistScreen
   ];
 
   @override
@@ -84,9 +84,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                 label: 'Music',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
+                icon: Icon(Icons.medical_services_outlined),
+                activeIcon: Icon(Icons.medical_services),
+                label: 'Therapist',
               ),
             ],
           ),

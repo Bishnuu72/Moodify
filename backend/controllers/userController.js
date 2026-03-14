@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const PatientRelationship = require('../models/PatientRelationship');
 const bcrypt = require('bcryptjs');
 
 // @desc    Register new user (MongoDB only)
@@ -407,6 +408,126 @@ const unsuspendUser = async (req, res) => {
   }
 };
 
+// @desc    Declare a user as my patient (for therapists)
+// @route   POST /api/users/declare-patient
+// @access  Private (Therapists only)
+const declarePatient = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const { therapistId } = req.body; // In real app, get from auth middleware
+
+    if (!userId || !therapistId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and therapist ID are required',
+      });
+    }
+
+    // Find the user to verify they exist
+    const userToDeclare = await User.findOne({ userId });
+    
+    if (!userToDeclare) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check if relationship already exists
+    const existingRelationship = await PatientRelationship.findOne({
+      therapistId,
+      patientId: userId,
+    });
+
+    if (existingRelationship) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already your patient',
+      });
+    }
+
+    // Create new patient relationship
+    const relationship = await PatientRelationship.create({
+      therapistId,
+      patientId: userId,
+      status: 'active',
+    });
+
+    console.log(`✅ Patient declared: ${userId} by therapist ${therapistId}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'User declared as patient successfully',
+      data: {
+        userId: userToDeclare.userId,
+        displayName: userToDeclare.displayName,
+        email: userToDeclare.email,
+        role: userToDeclare.role,
+        declaredAt: relationship.declaredAt,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error declaring patient:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error declaring patient',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get therapist's patients
+// @route   GET /api/users/patients/:therapistId
+// @access  Private (Therapists only)
+const getTherapistPatients = async (req, res) => {
+  try {
+    const { therapistId } = req.params;
+
+    // Find all patient relationships for this therapist
+    const relationships = await PatientRelationship.find({
+      therapistId,
+      status: 'active',
+    }).sort({ declaredAt: -1 });
+
+    // Get patient details
+    const patients = await Promise.all(
+      relationships.map(async (rel) => {
+        const patient = await User.findOne({ userId: rel.patientId }).select('-password');
+        if (patient) {
+          return {
+            userId: patient.userId,
+            displayName: patient.displayName,
+            email: patient.email,
+            photoUrl: patient.photoUrl,
+            role: patient.role,
+            declaredAt: rel.declaredAt,
+            status: rel.status,
+          };
+        }
+        return null;
+      })
+    );
+
+    // Filter out null values
+    const validPatients = patients.filter(p => p !== null);
+
+    console.log(`✅ Fetched ${validPatients.length} patients for therapist ${therapistId}`);
+
+    res.json({
+      success: true,
+      count: validPatients.length,
+      data: validPatients,
+    });
+  } catch (error) {
+    console.error('❌ Error fetching patients:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching patients',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -417,4 +538,6 @@ module.exports = {
   deleteUser,
   suspendUser,
   unsuspendUser,
+  declarePatient,
+  getTherapistPatients,
 };

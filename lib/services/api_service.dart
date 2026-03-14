@@ -719,4 +719,338 @@ class ApiService {
       throw Exception('Error: $e');
     }
   }
+  
+  // Send a message
+  static Future<Map<String, dynamic>> sendMessage({
+    required String senderId,
+    required String receiverId,
+    required String message,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/messages/send'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'senderId': senderId,
+          'receiverId': receiverId,
+          'message': message,
+        }),
+      );
+      
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Invalid message data');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to send message');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Get messages between two users
+  static Future<Map<String, dynamic>> getMessages(String userId1, String userId2) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/messages/$userId1/$userId2'),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 404) {
+        throw Exception('Messages not found');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to load messages');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Get conversations for a user (therapist dashboard)
+  static Future<Map<String, dynamic>> getConversations(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/messages/conversations/$userId'),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 404) {
+        throw Exception('Conversations not found');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to load conversations');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Mark messages as read
+  static Future<Map<String, dynamic>> markAsRead(String senderId, String receiverId) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/messages/read'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'senderId': senderId,
+          'receiverId': receiverId,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Invalid request');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to mark messages as read');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Declare user as patient
+  static Future<Map<String, dynamic>> declareAsPatient(String userId, String therapistId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/declare-patient'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'userId': userId,
+          'therapistId': therapistId,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Invalid request');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to declare as patient');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Get therapist's patients
+  static Future<Map<String, dynamic>> getTherapistPatients(String therapistId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/patients/$therapistId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 404) {
+        throw Exception('No patients found');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to fetch patients');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Create schedule/appointment
+  static Future<Map<String, dynamic>> createSchedule({
+    required String therapistId,
+    required String patientId,
+    required String patientName,
+    required String patientEmail,
+    String? patientPhotoUrl,
+    required String appointmentType,
+    required DateTime scheduledDate,
+    required String scheduledTime,
+    int duration = 30,
+    String? notes,
+  }) async {
+    try {
+      // Format date as YYYY-MM-DD (without timezone)
+      final year = scheduledDate.year;
+      final month = scheduledDate.month.toString().padLeft(2, '0');
+      final day = scheduledDate.day.toString().padLeft(2, '0');
+      final dateString = '$year-$month-$day';
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/schedules'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'therapistId': therapistId,
+          'patientId': patientId,
+          'patientName': patientName,
+          'patientEmail': patientEmail,
+          'patientPhotoUrl': patientPhotoUrl,
+          'appointmentType': appointmentType,
+          'scheduledDate': dateString, // Send as YYYY-MM-DD string
+          'scheduledTime': scheduledTime,
+          'duration': duration,
+          'notes': notes,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 409) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Time slot already booked');
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Invalid request');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to create schedule');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Get therapist schedules
+  static Future<Map<String, dynamic>> getTherapistSchedules(String therapistId, {String? status}) async {
+    try {
+      String url = '$baseUrl/schedules/therapist/$therapistId';
+      if (status != null && status.isNotEmpty) {
+        url += '?status=$status';
+      }
+      
+      final response = await http.get(Uri.parse(url));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to fetch schedules');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Delete schedule
+  static Future<Map<String, dynamic>> deleteSchedule(String scheduleId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/schedules/$scheduleId'),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 404) {
+        throw Exception('Schedule not found');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to delete schedule');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Save patient note
+  static Future<Map<String, dynamic>> savePatientNote({
+    required String therapistId,
+    required String patientId,
+    required String patientName,
+    required String note,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notes'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'therapistId': therapistId,
+          'patientId': patientId,
+          'patientName': patientName,
+          'note': note,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Invalid request');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to save note');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
+  
+  // Get patient notes
+  static Future<Map<String, dynamic>> getPatientNotes(String patientId, String therapistId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/notes/patient/$patientId?therapistId=$therapistId'),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to fetch notes');
+      }
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Network error: ${e.toString()}');
+    }
+  }
 }

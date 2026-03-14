@@ -1,11 +1,9 @@
-import'package:flutter/material.dart';
-import'package:provider/provider.dart';
-import'../../services/auth_service.dart';
-import'../auth/login_screen.dart';
-import'therapist_home_screen.dart';
-import'therapist_patients_screen.dart';
-import'therapist_sessions_screen.dart';
-import'therapist_profile_screen.dart';
+import 'package:flutter/material.dart';
+import 'therapist_home_screen.dart';
+import 'therapist_patients_screen.dart';
+import 'therapist_messages_screen.dart';
+import 'therapist_sessions_screen.dart';
+import 'therapist_profile_screen.dart';
 
 class TherapistDashboardScreen extends StatefulWidget {
   const TherapistDashboardScreen({super.key});
@@ -20,6 +18,7 @@ class _TherapistDashboardScreenState extends State<TherapistDashboardScreen> {
   final List<Widget> _screens = [
    const TherapistHomeScreen(),
    const TherapistPatientsScreen(),
+   const TherapistMessagesScreen(),
    const TherapistSessionsScreen(),
    const TherapistProfileScreen(),
   ];
@@ -72,6 +71,11 @@ class _TherapistDashboardScreenState extends State<TherapistDashboardScreen> {
                 icon: Icon(Icons.people_outline),
                 activeIcon: Icon(Icons.people),
                 label: 'Patients',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.message_outlined),
+                activeIcon: Icon(Icons.message),
+                label: 'Messages',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.calendar_today_outlined),

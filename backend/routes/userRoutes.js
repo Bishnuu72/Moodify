@@ -10,11 +10,19 @@ const {
   deleteUser,
   suspendUser,
   unsuspendUser,
+  declarePatient,
+  getTherapistPatients,
 } = require('../controllers/userController');
 
 // Registration and Login routes
 router.post('/register', registerUser);
 router.post('/login', loginUser);
+
+// Declare patient route (for therapists) - MUST be before /:userId to avoid conflicts!
+router.post('/declare-patient', declarePatient);
+
+// Get therapist's patients
+router.get('/patients/:therapistId', getTherapistPatients);
 
 // Other user routes
 router.route('/')

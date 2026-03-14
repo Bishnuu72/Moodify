@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
+import 'therapist_detail_screen.dart';
 
 class TherapistScreen extends StatefulWidget {
   const TherapistScreen({super.key});
@@ -213,7 +213,6 @@ class _TherapistScreenState extends State<TherapistScreen> {
     // Get data from MongoDB response
     final name = therapist['displayName'] ?? 'Therapist';
     final specialization = therapist['specialization'] ?? 'General Therapy';
-    final email = therapist['email'] ?? '';
     final photoUrl = therapist['photoUrl'];
 
     return Container(
@@ -299,7 +298,15 @@ class _TherapistScreenState extends State<TherapistScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                // TODO: Navigate to therapist profile or book session
+                // Navigate to therapist detail page with messaging
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TherapistDetailScreen(
+                      therapist: Map<String, dynamic>.from(therapist),
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

@@ -1,8 +1,14 @@
-import'package:flutter/material.dart';
-import'package:animate_do/animate_do.dart';
-import'../../constants/colors.dart';
-import'../../services/auth_service.dart';
-import'../../services/api_service.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:intl/intl.dart';
+import '../../constants/colors.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
+import 'therapist_patients_screen.dart';
+import 'therapist_sessions_screen.dart';
+import 'therapist_messages_screen.dart';
+import 'patient_notes_screen.dart';
 
 class TherapistHomeScreen extends StatefulWidget {
   const TherapistHomeScreen({super.key});
@@ -15,15 +21,72 @@ class _TherapistHomeScreenState extends State<TherapistHomeScreen> {
   String _therapistName = '';
   bool _isLoading = true;
   
+  // Today's schedule statistics
+  int _todaySessions = 0;
+  int _pendingSessions = 0;
+  int _completedSessions = 0;
+  
   @override
   void initState() {
     super.initState();
     _loadTherapistName();
+    _loadTodaySchedule();
+  }
+  
+  Future<void> _loadTodaySchedule() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final currentUser = authService.currentUser;
+
+      if (currentUser == null) return;
+
+      final response = await ApiService.getTherapistSchedules(currentUser.uid);
+
+      if (response['success']) {
+        final allSchedules = List<Map<String, dynamic>>.from(response['data']);
+        
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final tomorrow = today.add(const Duration(days: 1));
+
+        int todayCount = 0;
+        int pendingCount = 0;
+        int completedCount = 0;
+
+        for (var schedule in allSchedules) {
+          final scheduledDate = DateTime.parse(schedule['scheduledDate']);
+          final status = schedule['status'];
+
+          // Count today's appointments
+          if (scheduledDate.year == today.year &&
+              scheduledDate.month == today.month &&
+              scheduledDate.day == today.day) {
+            todayCount++;
+            
+            // Count by status
+            if (status == 'completed') {
+              completedCount++;
+            } else if (status == 'scheduled' || status == 'confirmed') {
+              pendingCount++;
+            }
+          }
+        }
+
+        setState(() {
+          _todaySessions = todayCount;
+          _pendingSessions = pendingCount;
+          _completedSessions = completedCount;
+        });
+      }
+    } catch (e) {
+      print('Error loading today schedule: $e');
+    }
   }
   
   Future<void> _loadTherapistName() async {
     try {
-      final authService = AuthService();
+      // Use Provider to get the shared AuthService instance
+      final authService = Provider.of<AuthService>(context, listen: false);
       final currentUser = authService.currentUser;
       
       print('🔍 [DEBUG] Current user UID: ${currentUser?.uid ?? "NULL"}');
@@ -219,9 +282,9 @@ class _TherapistHomeScreenState extends State<TherapistHomeScreen> {
                    Row(
                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                      children: [
-                       _buildScheduleStat('3', 'Sessions', Icons.calendar_today),
-                       _buildScheduleStat('1', 'Pending', Icons.pending),
-                       _buildScheduleStat('2', 'Completed', Icons.check_circle),
+                       _buildScheduleStat(_todaySessions.toString(), 'Sessions', Icons.calendar_today),
+                       _buildScheduleStat(_pendingSessions.toString(), 'Pending', Icons.pending),
+                       _buildScheduleStat(_completedSessions.toString(), 'Completed', Icons.check_circle),
                      ],
                    ),
                  ],
@@ -254,31 +317,59 @@ class _TherapistHomeScreenState extends State<TherapistHomeScreen> {
                 crossAxisSpacing: 16,
                 childAspectRatio: 1.5,
                 children: [
-                 _buildQuickActionCard(
-                   'Add Patient',
-                   Icons.person_add,
-                   Colors.blue,
-                   () {},
-                 ),
-                 _buildQuickActionCard(
-                   'Schedule Session',
-                   Icons.event,
-                   Colors.green,
-                   () {},
-                 ),
-                 _buildQuickActionCard(
-                   'Patient Notes',
-                   Icons.note_add,
-                   Colors.orange,
-                   () {},
-                 ),
-                 _buildQuickActionCard(
-                   'Reports',
-                   Icons.assessment,
-                   Colors.purple,
-                   () {},
-                 ),
-               ],
+                  _buildQuickActionCard(
+                    'Patients',
+                    Icons.people,
+                    Colors.blue,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TherapistPatientsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildQuickActionCard(
+                    'Sessions',
+                    Icons.event,
+                    Colors.green,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TherapistSessionsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildQuickActionCard(
+                    'Messages',
+                    Icons.message,
+                    Colors.orange,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TherapistMessagesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildQuickActionCard(
+                    'Patient Notes',
+                    Icons.note_add,
+                    Colors.purple,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PatientNotesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
              ),
            ),
          ],

@@ -34,12 +34,18 @@ const moodRoutes = require('./routes/moodRoutes');
 const userRoutes = require('./routes/userRoutes');
 const wellnessRoutes = require('./routes/wellnessRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const scheduleRoutes = require('./routes/scheduleRoutes');
+const noteRoutes = require('./routes/noteRoutes');
 
 // API Routes
 app.use('/api/moods', moodRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/wellness', wellnessRoutes);
 app.use('/api/verification', verificationRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/schedules', scheduleRoutes);
+app.use('/api/notes', noteRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
